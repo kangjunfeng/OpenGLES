@@ -23,7 +23,6 @@
     self = [super init];
     if (self) {
         self.frame =frame;
-        [self initLayer];
     }
     return self;
 }

@@ -1,8 +1,8 @@
 //
 //  ViewController.m
-//  OpenGLES_3
+//  OpenGLES_2
 //
-//  Created by admin on 14/04/2017.
+//  Created by admin on 12/04/2017.
 //  Copyright © 2017 admin. All rights reserved.
 //
 
@@ -17,15 +17,13 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    
     [self createGL];
 }
-
--(void)createGL{
+-(void)createGL
+{
     JFOpenGLESView *glView =[[JFOpenGLESView alloc]initWithFrame:self.view.frame];
     [self.view addSubview:glView];
 }
-
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];

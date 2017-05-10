@@ -9,17 +9,20 @@
 #import "JFOpenGLESView.h"
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
+#import "JFCAEGLayer.h"
 
 const GLfloat vertices[]={
-    -0.5f,-0.5f, 0,        //左下
-    0.5f,-0.5f, 0,        //右下
-    -0.5f, 0.5f, 0,        //左上
-    0.5f, 0.5f, 0         //右上
+    // Line one
+    { 0.5f,  0.5f, 0.0f},
+    {-0.5f, -0.5f, 0.0f},
+    // Line Two
+    {-0.53f, 0.48f, 0.0f},
+    { 0.55f, -0.4f, 0.0f},
 };
 
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
-    CAEAGLLayer *_glLayer;
+    JFCAEGLayer *_glLayer;
     GLuint _colorRenderBuffer;
     GLuint _frameBuffer;
     GLuint _glprogram;
@@ -29,10 +32,6 @@ const GLfloat vertices[]={
 @end
 
 @implementation JFOpenGLESView
-
-+(Class)layerClass{
-    return [CAEAGLLayer class];
-}
 
 -(id)init
 {
@@ -47,8 +46,8 @@ const GLfloat vertices[]={
 {
     self = [super initWithFrame:frame];
     if (self) {
+        self.frame =frame;
         [self initGLWithFrame:frame];
-        [self setupLayer];
         [self deleteBuffer];
         [self initBuffer];
         [self initProgram];
@@ -62,20 +61,9 @@ const GLfloat vertices[]={
     _eaglContext =[[EAGLContext alloc]initWithAPI:kEAGLRenderingAPIOpenGLES2];
     [EAGLContext setCurrentContext:_eaglContext];
 
+    _glLayer=[[JFCAEGLayer alloc]initWithFrame:frame];
+    [self.layer addSublayer:_glLayer];
 }
-
-- (void)setupLayer
-{
-    _glLayer = (CAEAGLLayer*) self.layer;
-    
-    // CALayer 默认是透明的，必须将它设为不透明才能让其可见
-    _glLayer.opaque = YES;
-    
-    // 设置描绘属性，在这里设置不维持渲染内容以及颜色格式为 RGBA8
-    _glLayer.drawableProperties = [NSDictionary dictionaryWithObjectsAndKeys:
-                                     [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking, kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat, nil];
-}
-
 
 -(void)initBuffer
 {
@@ -105,7 +93,7 @@ const GLfloat vertices[]={
 {
     //shader
     GLuint vertext  =[self compileWithShaderName:@"Vertex" shaderType:GL_VERTEX_SHADER];
-    GLuint fragment =[self compileWithShaderName:@"fragment" shaderType:GL_FRAGMENT_SHADER];
+    GLuint fragment =[self compileWithShaderName:@"Fragment" shaderType:GL_FRAGMENT_SHADER];
     
     _glprogram =glCreateProgram();
     glAttachShader(_glprogram, vertext);
@@ -135,7 +123,7 @@ const GLfloat vertices[]={
     NSString *shaderPath =[[NSBundle mainBundle]pathForResource:name ofType:@"glsl"];
     NSError *error;
     NSString *strShader =[NSString stringWithContentsOfFile:shaderPath encoding:NSUTF8StringEncoding error:&error];
-    NSLog(@"strShader %@",strShader);
+
     if (!strShader) {
         NSLog(@"shader error %@",error.localizedDescription);
         exit(1);
@@ -167,26 +155,35 @@ const GLfloat vertices[]={
 
 -(void)draw{
     
+    //清屏
+    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLineWidth(1.0);
+    
     //设置绘制区域
     glViewport(0,0,self.frame.size.width,self.frame.size.height);
-    
+
     /**
-     *void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei 
+     *void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei
      *                            stride,const void *ptr)
      *     index: 着色器脚本对应变量ID
      *     size : 此类型数据的个数
      *     type : 此类型的sizeof值
      *     normalized : 是否对非float类型数据转化到float时候进行归一化处理
      *     stride : 此类型数据在数组中的重复间隔宽度，byte类型计数
-     *     ptr    : 数据指针， 这个值受到VBO的影响 
+     *     ptr    : 数据指针， 这个值受到VBO的影响
      */
-    //传入顶点参数
-    glVertexAttribPointer(_glposition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glEnableVertexAttribArray(_glposition);
+    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "position"));
+    glVertexAttribPointer(glGetAttribLocation(_glprogram, "position"), 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat), vertices);
     
-    //绘制多边形
-    glDrawArrays(GL_TRIANGLE_STRIP, 1, 4);
+    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "color"));
+    glVertexAttribPointer(glGetAttribLocation(_glprogram, "color"), 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat), vertices+sizeof(GLfloat)*3);
+    
+    glDrawArrays(GL_LINES,1, 4);
+    
+    //将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在 renderbuffer 可以被呈现之前，必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
     [_eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+
 }
 
 
