@@ -201,6 +201,8 @@ const GLfloat pentagon[]={
      */
     glEnableVertexAttribArray(_glPosition);
     glVertexAttribPointer(_glPosition, 3, GL_FLOAT, GL_FALSE, 0, pentagon);
+    
+    //triangle->3  rectangle->4  pentagon->5
     glDrawArrays(GL_TRIANGLE_FAN,0,5);
     
     //将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在 renderbuffer 可以被呈现之前，必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
