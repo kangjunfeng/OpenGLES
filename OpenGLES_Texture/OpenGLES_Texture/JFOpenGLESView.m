@@ -10,14 +10,6 @@
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 
-const GLfloat pentagon[]={
-    -0.5f,-0.5f,0,
-    -0.5f, 0.0f,0,
-     0.0f, 0.5f,0,
-     0.5f, 0.0f,0,
-     0.5f,-0.5f,0
-};
-
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
     CAEAGLLayer *_glLayer;
