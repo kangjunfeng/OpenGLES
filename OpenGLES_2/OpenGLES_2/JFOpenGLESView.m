@@ -12,18 +12,18 @@
 
 const GLfloat vertices[]={
     -0.5f,-0.5f, 0,        //左下
-    0.5f,-0.5f, 0,        //右下
+     0.5f,-0.5f, 0,        //右下
     -0.5f, 0.5f, 0,        //左上
-    0.5f, 0.5f, 0         //右上
+     0.5f, 0.5f, 0         //右上
 };
 
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
     CAEAGLLayer *_glLayer;
-    GLuint _colorRenderBuffer;
-    GLuint _frameBuffer;
-    GLuint _glprogram;
-    GLuint _glposition;
+    GLuint       _colorRenderBuffer;
+    GLuint       _frameBuffer;
+    GLuint       _glProgram;
+    GLuint       _glPosition;
 }
 
 @end
@@ -107,26 +107,26 @@ const GLfloat vertices[]={
     GLuint vertext  =[self compileWithShaderName:@"Vertex" shaderType:GL_VERTEX_SHADER];
     GLuint fragment =[self compileWithShaderName:@"fragment" shaderType:GL_FRAGMENT_SHADER];
     
-    _glprogram =glCreateProgram();
-    glAttachShader(_glprogram, vertext);
-    glAttachShader(_glprogram, fragment);
+    _glProgram =glCreateProgram();
+    glAttachShader(_glProgram, vertext);
+    glAttachShader(_glProgram, fragment);
 
     //操作产生最后的可执行程序，它包含最后可以在硬件上执行的硬件指令。
-    glLinkProgram(_glprogram);
+    glLinkProgram(_glProgram);
     
     GLint linkSuccess = GL_TRUE;
-    glGetProgramiv(_glprogram, GL_LINK_STATUS,&linkSuccess);
+    glGetProgramiv(_glProgram, GL_LINK_STATUS,&linkSuccess);
     if (linkSuccess ==GL_FALSE) {
         GLchar glMessage[256];
-        glGetProgramInfoLog(_glprogram, sizeof(glMessage), 0, &glMessage[0]);
+        glGetProgramInfoLog(_glProgram, sizeof(glMessage), 0, &glMessage[0]);
         NSString *messageString = [NSString stringWithUTF8String:glMessage];
         NSLog(@"program error %@", messageString);
         exit(1);
     }
     
     //绑定着色器参数
-    glUseProgram(_glprogram);
-    _glposition = glGetAttribLocation(_glprogram,"Position");
+    glUseProgram(_glProgram);
+    _glPosition = glGetAttribLocation(_glProgram,"Position");
 }
 
 -(GLuint)compileWithShaderName:(NSString*)name shaderType:(GLenum)shaderType
@@ -166,6 +166,9 @@ const GLfloat vertices[]={
 }
 
 -(void)draw{
+    //清屏
+    glClearColor(1.0,1.0,1.0,1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
     
     //设置绘制区域
     glViewport(0,0,self.frame.size.width,self.frame.size.height);
@@ -181,11 +184,11 @@ const GLfloat vertices[]={
      *     ptr    : 数据指针， 这个值受到VBO的影响 
      */
     //传入顶点参数
-    glVertexAttribPointer(_glposition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
-    glEnableVertexAttribArray(_glposition);
+    glVertexAttribPointer(_glPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(_glPosition);
     
-    //绘制多边形
-    glDrawArrays(GL_TRIANGLE_STRIP, 1, 4);
+    //绘制
+    glDrawArrays(GL_TRIANGLE_STRIP,0, 4);
     [_eaglContext presentRenderbuffer:GL_RENDERBUFFER];
 }
 
