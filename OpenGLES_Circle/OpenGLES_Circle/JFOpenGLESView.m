@@ -9,7 +9,6 @@
 #import "JFOpenGLESView.h"
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
-#import "JFCAEGLayer.h"
 
 typedef struct {
     GLfloat x,y,z;
@@ -18,22 +17,26 @@ typedef struct {
 
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
-    JFCAEGLayer *_glLayer;
+    CAEAGLLayer *_glLayer;
     GLuint _colorRenderBuffer;
     GLuint _frameBuffer;
-    GLuint _glprogram;
-    GLuint _glposition;
+    GLuint _glProgram;
+    GLuint _glPosition;
 }
 
 @end
 
 @implementation JFOpenGLESView
 
++(Class)layerClass
+{
+    return [CAEAGLLayer class];
+}
 -(id)init
 {
     self = [super init];
     if (self) {
-        
+    
     }
     return self;
 }
@@ -44,6 +47,7 @@ typedef struct {
     if (self) {
         self.frame =frame;
         [self initGLWithFrame:frame];
+        [self setupLayer];
         [self deleteBuffer];
         [self initBuffer];
         [self initProgram];
@@ -56,10 +60,21 @@ typedef struct {
 {
     _eaglContext =[[EAGLContext alloc]initWithAPI:kEAGLRenderingAPIOpenGLES2];
     [EAGLContext setCurrentContext:_eaglContext];
-
-    _glLayer=[[JFCAEGLayer alloc]initWithFrame:frame];
-    [self.layer addSublayer:_glLayer];
 }
+
+- (void)setupLayer
+{
+    _glLayer = (CAEAGLLayer*) self.layer;
+    
+    // CALayer 默认是透明的，必须将它设为不透明才能让其可见
+    _glLayer.opaque = YES;
+    
+    // 设置描绘属性，在这里设置不维持渲染内容以及颜色格式为 RGBA8
+    _glLayer.drawableProperties = [NSDictionary dictionaryWithObjectsAndKeys:
+                                   [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking, kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat, nil];
+}
+
+
 
 -(void)initBuffer
 {
@@ -91,26 +106,26 @@ typedef struct {
     GLuint vertext  =[self compileWithShaderName:@"Vertex" shaderType:GL_VERTEX_SHADER];
     GLuint fragment =[self compileWithShaderName:@"Fragment" shaderType:GL_FRAGMENT_SHADER];
     
-    _glprogram =glCreateProgram();
-    glAttachShader(_glprogram, vertext);
-    glAttachShader(_glprogram, fragment);
+    _glProgram =glCreateProgram();
+    glAttachShader(_glProgram, vertext);
+    glAttachShader(_glProgram, fragment);
 
     //操作产生最后的可执行程序，它包含最后可以在硬件上执行的硬件指令。
-    glLinkProgram(_glprogram);
+    glLinkProgram(_glProgram);
     
     GLint linkSuccess = GL_TRUE;
-    glGetProgramiv(_glprogram, GL_LINK_STATUS,&linkSuccess);
+    glGetProgramiv(_glProgram, GL_LINK_STATUS,&linkSuccess);
     if (linkSuccess ==GL_FALSE) {
         GLchar glMessage[256];
-        glGetProgramInfoLog(_glprogram, sizeof(glMessage), 0, &glMessage[0]);
+        glGetProgramInfoLog(_glProgram, sizeof(glMessage), 0, &glMessage[0]);
         NSString *messageString = [NSString stringWithUTF8String:glMessage];
         NSLog(@"program error %@", messageString);
         exit(1);
     }
     
     //绑定着色器参数
-    glUseProgram(_glprogram);
-    _glposition = glGetAttribLocation(_glprogram,"Position");
+    glUseProgram(_glProgram);
+    _glPosition = glGetAttribLocation(_glProgram,"Position");
 }
 
 -(GLuint)compileWithShaderName:(NSString*)name shaderType:(GLenum)shaderType
@@ -143,7 +158,7 @@ typedef struct {
         GLchar messages[256];
         glGetShaderInfoLog(shaderHandler, sizeof(messages), 0, &messages[0]);
         NSString *messageString = [NSString stringWithUTF8String:messages];
-        NSLog(@"%@", messageString);
+        NSLog(@"compile failure:%@", messageString);
         exit(1);
     }
     return shaderHandler;
@@ -152,7 +167,7 @@ typedef struct {
 -(void)draw{
     
     //清屏
-    glClearColor(0.0, 1.0, 1.0, 1.0);
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glLineWidth(2.0);
     
@@ -172,7 +187,6 @@ typedef struct {
         GLfloat y = b * sin(delta * i);
         GLfloat z = 0.0;
         vertext[i] = (Vertex){x, y, z, x, y, x+y};
-        
         printf("%f , %f\n", x, y);
     }
     
@@ -186,11 +200,11 @@ typedef struct {
      *     stride : 此类型数据在数组中的重复间隔宽度，byte类型计数
      *     ptr    : 数据指针， 这个值受到VBO的影响
      */
-    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "position"));
-    glVertexAttribPointer(glGetAttribLocation(_glprogram, "position"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), vertext);
+    glEnableVertexAttribArray(glGetAttribLocation(_glProgram, "position"));
+    glVertexAttribPointer(glGetAttribLocation(_glProgram, "position"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), vertext);
     
-    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "color"));
-    glVertexAttribPointer(glGetAttribLocation(_glprogram, "color"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), vertext+sizeof(GLfloat)*3);
+    glEnableVertexAttribArray(glGetAttribLocation(_glProgram, "color"));
+    glVertexAttribPointer(glGetAttribLocation(_glProgram, "color"), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), vertext+sizeof(GLfloat)*3);
     
     glDrawArrays(GL_TRIANGLE_FAN, 0, segCount);
     
