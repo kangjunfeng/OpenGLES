@@ -1,8 +1,8 @@
 //
 //  ViewController.h
-//  OpenGLES_Texture
+//  OpenGLES_2
 //
-//  Created by admin on 11/05/2017.
+//  Created by admin on 12/04/2017.
 //  Copyright © 2017 admin. All rights reserved.
 //
 

@@ -1,10 +1,9 @@
-attribute vec3 position;
-attribute vec2 texcoord;
+attribute vec4 Position;
+attribute vec2 TextureCoords;
+varying   vec2 TextureCoordsFrag;
 
-varying vec2 vTexcoord;
-
-void main()
+void main(void)
 {
-    gl_Position = vec4(position, 1.0);
-    vTexcoord  = texcoord;
+    gl_Position = Position;
+    TextureCoordsFrag = TextureCoords;
 }

@@ -10,24 +10,25 @@
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 
-const GLfloat vertices[] = {
-    0.5f,  0.5f, 0.0f, 1.0f, 0.0f,   // 右上
-    0.5f, -0.5f, 0.0f, 1.0f, 1.0f,   // 右下
-    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  // 左下
-    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  // 左下
-    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f,  // 左上
-    0.5f,  0.5f, 0.0f, 1.0f, 0.0f,   // 右上
+const GLfloat pentagon[]={
+    -0.5f,-0.5f,0,
+    -0.5f, 0.0f,0,
+     0.0f, 0.5f,0,
+     0.5f, 0.0f,0,
+     0.5f,-0.5f,0
 };
 
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
     CAEAGLLayer *_glLayer;
-   
     GLuint _colorRenderBuffer;
     GLuint _frameBuffer;
-    GLuint _glprogram;
-    GLuint _glposition;
-    GLuint _texcoordID;
+    GLuint _glProgram;
+    GLuint _glPosition;
+  
+    GLuint _texture;
+    GLuint _textureCoords;
+    GLuint _textureID;
 }
 
 @end
@@ -58,19 +59,24 @@ const GLfloat vertices[] = {
         [self deleteBuffer];
         [self initBuffer];
         [self initProgram];
-        [self createVBO];
-        [self createTexture];
+        [self initImageTexture];
         [self draw];
     }
     return self;
 }
 
+/**
+ * 创建渲染对象
+ */
 -(void)initGLWithFrame:(CGRect)frame
 {
     _eaglContext =[[EAGLContext alloc]initWithAPI:kEAGLRenderingAPIOpenGLES2];
     [EAGLContext setCurrentContext:_eaglContext];
 }
 
+/**
+ * 创建渲染视图
+ */
 - (void)setupLayer
 {
     _glLayer = (CAEAGLLayer*) self.layer;
@@ -83,18 +89,23 @@ const GLfloat vertices[] = {
                                    [NSNumber numberWithBool:NO], kEAGLDrawablePropertyRetainedBacking, kEAGLColorFormatRGBA8, kEAGLDrawablePropertyColorFormat, nil];
 }
 
-
+/**
+ * 创建渲染缓存
+ */
 -(void)initBuffer
 {
     glGenRenderbuffers(1, &_colorRenderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _colorRenderBuffer);
-    [_eaglContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:_glLayer];
+    [_eaglContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer*)self.layer];
     
     glGenFramebuffers(1,&_frameBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER,_frameBuffer);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _frameBuffer);
 }
 
+/**
+ * 删除渲染缓存
+ */
 -(void)deleteBuffer
 {
     if (_colorRenderBuffer) {
@@ -108,32 +119,39 @@ const GLfloat vertices[] = {
     }
 }
 
+/**
+ * 创建渲染片元及着色器
+ */
 -(void)initProgram
 {
     //shader
     GLuint vertext  =[self compileWithShaderName:@"Vertex" shaderType:GL_VERTEX_SHADER];
     GLuint fragment =[self compileWithShaderName:@"Fragment" shaderType:GL_FRAGMENT_SHADER];
     
-    _glprogram =glCreateProgram();
-    glAttachShader(_glprogram, vertext);
-    glAttachShader(_glprogram, fragment);
+    _glProgram =glCreateProgram();
+    glAttachShader(_glProgram, vertext);
+    glAttachShader(_glProgram, fragment);
 
     //操作产生最后的可执行程序，它包含最后可以在硬件上执行的硬件指令。
-    glLinkProgram(_glprogram);
+    glLinkProgram(_glProgram);
     
     GLint linkSuccess = GL_TRUE;
-    glGetProgramiv(_glprogram, GL_LINK_STATUS,&linkSuccess);
+    glGetProgramiv(_glProgram, GL_LINK_STATUS,&linkSuccess);
     if (linkSuccess ==GL_FALSE) {
         GLchar glMessage[256];
-        glGetProgramInfoLog(_glprogram, sizeof(glMessage), 0, &glMessage[0]);
+        glGetProgramInfoLog(_glProgram, sizeof(glMessage), 0, &glMessage[0]);
         NSString *messageString = [NSString stringWithUTF8String:glMessage];
         NSLog(@"program error %@", messageString);
         exit(1);
     }
     
     //绑定着色器参数
-    glUseProgram(_glprogram);
-    _glposition = glGetAttribLocation(_glprogram,"Position");
+    glUseProgram(_glProgram);
+    
+    //参数
+    _glPosition = glGetAttribLocation(_glProgram,"Position");
+    _texture    = glGetUniformLocation(_glProgram, "Texture");//frag
+    _textureCoords = glGetAttribLocation(_glProgram, "TextureCoords");
 }
 
 -(GLuint)compileWithShaderName:(NSString*)name shaderType:(GLenum)shaderType
@@ -172,61 +190,17 @@ const GLfloat vertices[] = {
     return shaderHandler;
 }
 
--(void)createVBO{
-    GLuint vbo;
-    /**
-     *void glGenBuffers(GLsizei n, GLuint *buffers)
-     *     参数 n ： 表示需要创建纹理对象的个数
-     *     参数 buffers ：用于存储单一ID或多个ID的GLuint变量或数组的地址。
-     */
-    glGenBuffers(1, &vbo);
-   
-    /**
-     *void glBindBuffer(GLenum target, GLuint buffer);
-     *     指定当前活动缓冲区的对象
-     *     参数 target ：告诉VBO该缓存对象将保存顶点数组数据还是索引数组数据：GL_ARRAY_BUFFER或  
-                        GL_ELEMENT_ARRAY
-     *     参数 buffer ：指定绑定的VBO handle
-     */
-    glBindBuffer(GL_ARRAY_BUFFER,vbo);
-   
-    /**
-     *void glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-     *     参数 target:可以是GL_ARRAY_BUFFER()（顶点数据）或GL_ELEMENT_ARRAY_BUFFER(索引数据)
-     *     参数 size:存储相关数据所需的内存容量
-     *     参数 data:用于初始化缓冲区对象，可以是一个指向客户区内存的指针，也可以是NULL
-     *     参数 usage:数据在分配之后如何进行读写,如GL_STREAM_READ，GL_STREAM_DRAW，GL_STREAM_COPY，如图
-     */
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    
-    
-    /**
-     *void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei
-     *                            stride,const void *ptr)
-     *     index: 着色器脚本对应变量ID
-     *     size : 此类型数据的个数
-     *     type : 此类型的sizeof值
-     *     normalized : 是否对非float类型数据转化到float时候进行归一化处理
-     *     stride : 此类型数据在数组中的重复间隔宽度，byte类型计数
-     *     ptr    : 数据指针， 这个值受到VBO的影响
-     */
-    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "position"));
-    glVertexAttribPointer(glGetAttribLocation(_glprogram, "position"), 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*5, NULL);
-    
-    glEnableVertexAttribArray(glGetAttribLocation(_glprogram, "texcoord"));
-    glVertexAttribPointer(glGetAttribLocation(_glprogram, "texcoord"), 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*5, NULL+sizeof(GL_FLOAT)*3);
-
-}
-
--(void)createTexture
+/**
+ * 创建图片纹理
+ */
+-(void)initImageTexture
 {
-    NSString *path   = [[NSBundle mainBundle]pathForResource:@"3D" ofType:@"png"];
-    NSData   *data   = [[NSData alloc]initWithContentsOfFile:path];
-    UIImage  *image  = [UIImage imageWithData:data];
-    _texcoordID      = [self createTextureWithImage:image];
-
+    //获取图片
+    NSString *imgPath =[[NSBundle mainBundle]pathForResource:@"3D" ofType:@"png"];
+    NSData   *data    =[[NSData alloc]initWithContentsOfFile:imgPath];
+    UIImage  *image   =[UIImage imageWithData:data];
+    _textureID =[self createTextureWithImage:image];
 }
-
 
 -(GLuint)createTextureWithImage:(UIImage*)image
 {
@@ -254,7 +228,7 @@ const GLfloat vertices[] = {
      *  bitmapInfo:指定被渲染内存区域的“视图”是否包含一个alpha（透视）通道以及每个像素相应的位置，除此之外还
      可以指定组件式是浮点值还是整数值。
      */
-    CGContextRef  contextRef =  CGBitmapContextCreate(imageData, width,height, 8, width*4, colorSpace,kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGContextRef contextRef = CGBitmapContextCreate(imageData, width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     /**
      *  void CGContextTranslateCTM ( CGContextRef c, CGFloat tx, CGFloat ty )：平移坐标系统。
      *  该方法相当于把原来位于 (0, 0) 位置的坐标原点平移到 (tx, ty) 点。在平移后的坐标系统上绘制图形时，所有坐标点的 X 坐标都相当于增加了 tx，所有点的 Y 坐标都相当于增加了 ty。
@@ -270,26 +244,18 @@ const GLfloat vertices[] = {
     CGContextClearRect(contextRef, rect);
     CGContextDrawImage(contextRef, rect, imageRef);
     
-    GLuint textureID =[self createTexture2DWithImageData:imageData width:width height:height];
-//    CGContextRelease(contextRef);
-//    free(imageData);
-    
-    return textureID;
-}
-
--(GLuint)createTexture2DWithImageData:(void*)imgData width:(GLuint)width height:(GLuint)height
-{
-    //纹理设置
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-   
     //生成纹理
     glEnable(GL_TEXTURE_2D);
     GLuint textureID;
     glGenTextures(1,&textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    //纹理设置
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    
     /**
      *  void glTexImage2D(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei
      height,GLint border,GLenum format,GLenum type,const GLvoid * pixels);
@@ -309,39 +275,170 @@ const GLfloat vertices[] = {
      GL_UNSIGNED_SHORT_5_5_5_1
      *  pixels  指定内存中指向图像数据的指针
      */
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width,height, 0, GL_RGB, GL_UNSIGNED_BYTE, imgData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
     //绑定纹理位置
     glBindTexture(GL_TEXTURE_2D, 0);
     //释放内存
+    CGContextRelease(contextRef);
+    free(imageData);
     
     return textureID;
 }
 
+
+- (GLuint)setupTexture:(UIImage *)image {
+    CGImageRef cgImageRef = [image CGImage];
+    GLuint width = (GLuint)CGImageGetWidth(cgImageRef);
+    GLuint height = (GLuint)CGImageGetHeight(cgImageRef);
+    CGRect rect = CGRectMake(0, 0, width, height);
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    void *imageData = malloc(width * height * 4);
+    CGContextRef context = CGBitmapContextCreate(imageData, width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGContextTranslateCTM(context, 0, height);
+    CGContextScaleCTM(context, 1.0f, -1.0f);
+    CGColorSpaceRelease(colorSpace);
+    CGContextClearRect(context, rect);
+    CGContextDrawImage(context, rect, cgImageRef);
+    
+    glEnable(GL_TEXTURE_2D);
+    
+    /**
+     *  GL_TEXTURE_2D表示操作2D纹理
+     *  创建纹理对象，
+     *  绑定纹理对象，
+     */
+    
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    /**
+     *  纹理过滤函数
+     *  图象从纹理图象空间映射到帧缓冲图象空间(映射需要重新构造纹理图像,这样就会造成应用到多边形上的图像失真),
+     *  这时就可用glTexParmeteri()函数来确定如何把纹理象素映射成像素.
+     *  如何把图像从纹理图像空间映射到帧缓冲图像空间（即如何把纹理像素映射成像素）
+     */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // S方向上的贴图模式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // T方向上的贴图模式
+    // 线性过滤：使用距离当前渲染像素中心最近的4个纹理像素加权平均值
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    /**
+     *  将图像数据传递给到GL_TEXTURE_2D中, 因其于textureID纹理对象已经绑定，所以即传递给了textureID纹理对象中。
+     *  glTexImage2d会将图像数据从CPU内存通过PCIE上传到GPU内存。
+     *  不使用PBO时它是一个阻塞CPU的函数，数据量大会卡。
+     */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    
+    // 结束后要做清理
+    glBindTexture(GL_TEXTURE_2D, 0); //解绑
+    CGContextRelease(context);
+    free(imageData);
+    
+    return textureID;
+}
+
+
+
+/**
+ * 绘制
+ */
 -(void)draw{
-
-    glClearColor(0.0, 1.0,1.0, 1.0);
+    //清屏
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glLineWidth(2.0);
     
-    glViewport(0, 0, self.frame.size.width, self.frame.size.height);
+    //设置绘制区域
+    glViewport(self.frame.size.width/2-50,self.frame.size.height/2-50,100,100);
+   
+    //激活
+    glActiveTexture(GL_TEXTURE5); // 指定纹理单元GL_TEXTURE5
+    glBindTexture(GL_TEXTURE_2D, _textureID); // 绑定，即可从_textureID中取出图像数据。
+    glUniform1i(_texture, 5); // 与纹理单元的序号对应
     
-    // 激活纹理
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _texcoordID);
-    glUniform1i(glGetUniformLocation(_glprogram, "image"), 0);
+    //render
+    [self renderVertices];
     
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    
-    // 索引数组
-    //unsigned int indices[] = {0,1,2,3,2,0};
-    //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
-    
-    //将指定 renderbuffer 呈现在屏幕上，在这里我们指定的是前面已经绑定为当前 renderbuffer 的那个，在 renderbuffer 可以被呈现之前，必须调用renderbufferStorage:fromDrawable: 为之分配存储空间。
+    // 使用完之后解绑GL_TEXTURE_2D
+    glBindTexture(GL_TEXTURE_2D, 0);
     [_eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    
+}
+
+-(void)renderVertices
+{
+    GLfloat texCoords[] = {
+        0, 0,//左下
+        1, 0,//右下
+        0, 1,//左上
+        1, 1,//右上
+    };
+   
+    /**
+     *void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei
+     *                            stride,const void *ptr)
+     *     index: 着色器脚本对应变量ID
+     *     size : 此类型数据的个数
+     *     type : 此类型的sizeof值
+     *     normalized : 是否对非float类型数据转化到float时候进行归一化处理
+     *     stride : 此类型数据在数组中的重复间隔宽度，byte类型计数
+     *     ptr    : 数据指针， 这个值受到VBO的影响
+     */
+    glVertexAttribPointer(_textureCoords, 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(_textureCoords);
+    
+    GLfloat vertices[] = {
+        -1, -1, 0, //左下
+         1, -1, 0, //右下
+        -1,  1, 0, //左上
+         1,  1, 0  //右上
+    };
+    glVertexAttribPointer(_glPosition, 3, GL_FLOAT, GL_FALSE, 0, vertices);
+    glEnableVertexAttribArray(_glPosition);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+}
+
+-(void)renderByVBO
+{
+    const GLfloat texCoords[] = {
+        0, 0,//左下
+        1, 0,//右下
+        0, 1,//左上
+        1, 1,//右上
+    };
+    glVertexAttribPointer(_textureCoords, 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(_textureCoords);
 
 
+    const GLfloat vertices[] = {
+        -1, -1, 0, //左下
+         1, -1, 0, //右下
+        -1,  1, 0, //左上
+         1,  1, 0  //右上
+    };
+
+    GLuint vertexBuffer;
+    glGenBuffers(1, &vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(_glPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(_glPosition);
 
 
+    const GLubyte indices[] = {
+        0,1,2,
+        1,2,3
+    };
+    GLuint indexBuffer;
+    glGenBuffers(1, &indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    
+    glDrawElements(GL_TRIANGLE_STRIP, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_BYTE, 0);
 }
 
 
