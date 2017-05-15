@@ -44,7 +44,7 @@
     [EAGLContext setCurrentContext:_eaglContext];
     
     //init layer
-    _layer =[[JFCAEGLayer alloc]initWithFrame:CGRectMake(100,100,100,100)];
+    _layer =[[JFCAEGLayer alloc]initWithFrame:CGRectMake(0,0,self.view.frame.size.width,self.view.frame.size.height)];
     [self.view.layer addSublayer:_layer];
 }
 
