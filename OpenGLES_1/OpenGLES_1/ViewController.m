@@ -10,7 +10,8 @@
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 #import "JFCAEGLayer.h"
-@interface ViewController (){
+@interface ViewController ()
+{
     EAGLContext *_eaglContext;
     JFCAEGLayer *_layer;
     GLuint _colorRenderBuffer;
