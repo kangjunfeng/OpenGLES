@@ -16,7 +16,6 @@
     JFCAEGLayer *_layer;
     GLuint _colorRenderBuffer;
     GLuint _frameBuffer;
-    
 }
 
 @end
@@ -25,8 +24,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
     // Do any additional setup after loading the view, typically from a nib.
+    
     [self initGL];
     [self bindBuffer];
     [self render];
