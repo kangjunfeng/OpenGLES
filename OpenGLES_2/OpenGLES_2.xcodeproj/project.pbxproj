@@ -17,7 +17,7 @@
 		84455D3F1E9E2E4000A3E07B /* OpenGLES_2UITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 84455D3E1E9E2E4000A3E07B /* OpenGLES_2UITests.m */; };
 		84455D511E9E307D00A3E07B /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84455D501E9E307D00A3E07B /* OpenGLES.framework */; };
 		84455D531E9E308000A3E07B /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84455D521E9E308000A3E07B /* GLKit.framework */; };
-		8448508B1E9F258C00271A54 /* fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 8448508A1E9F258C00271A54 /* fragment.glsl */; };
+		8448508B1E9F258C00271A54 /* Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 8448508A1E9F258C00271A54 /* Fragment.glsl */; };
 		8448508D1E9F25CF00271A54 /* Vertex.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 8448508C1E9F25CF00271A54 /* Vertex.glsl */; };
 		84F487201EA09DC600237C3D /* JFOpenGLESView.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F4871F1EA09DC600237C3D /* JFOpenGLESView.m */; };
 /* End PBXBuildFile section */
@@ -58,7 +58,7 @@
 		84455D401E9E2E4000A3E07B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		84455D501E9E307D00A3E07B /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		84455D521E9E308000A3E07B /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
-		8448508A1E9F258C00271A54 /* fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fragment.glsl; sourceTree = "<group>"; };
+		8448508A1E9F258C00271A54 /* Fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Fragment.glsl; sourceTree = "<group>"; };
 		8448508C1E9F25CF00271A54 /* Vertex.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Vertex.glsl; sourceTree = "<group>"; };
 		84F4871E1EA09DC600237C3D /* JFOpenGLESView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JFOpenGLESView.h; sourceTree = "<group>"; };
 		84F4871F1EA09DC600237C3D /* JFOpenGLESView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JFOpenGLESView.m; sourceTree = "<group>"; };
@@ -91,6 +91,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4B0C194D1ED1CE1400AC889E /* shader */ = {
+			isa = PBXGroup;
+			children = (
+				8448508C1E9F25CF00271A54 /* Vertex.glsl */,
+				8448508A1E9F258C00271A54 /* Fragment.glsl */,
+			);
+			name = shader;
+			sourceTree = "<group>";
+		};
 		84455D0D1E9E2E3F00A3E07B = {
 			isa = PBXGroup;
 			children = (
@@ -167,10 +176,9 @@
 		844850871E9F246500271A54 /* OpenGLES */ = {
 			isa = PBXGroup;
 			children = (
+				4B0C194D1ED1CE1400AC889E /* shader */,
 				84F4871E1EA09DC600237C3D /* JFOpenGLESView.h */,
 				84F4871F1EA09DC600237C3D /* JFOpenGLESView.m */,
-				8448508C1E9F25CF00271A54 /* Vertex.glsl */,
-				8448508A1E9F258C00271A54 /* fragment.glsl */,
 			);
 			name = OpenGLES;
 			sourceTree = "<group>";
@@ -286,7 +294,7 @@
 			files = (
 				84455D291E9E2E3F00A3E07B /* LaunchScreen.storyboard in Resources */,
 				84455D261E9E2E3F00A3E07B /* Assets.xcassets in Resources */,
-				8448508B1E9F258C00271A54 /* fragment.glsl in Resources */,
+				8448508B1E9F258C00271A54 /* Fragment.glsl in Resources */,
 				84455D241E9E2E3F00A3E07B /* Main.storyboard in Resources */,
 				8448508D1E9F25CF00271A54 /* Vertex.glsl in Resources */,
 			);

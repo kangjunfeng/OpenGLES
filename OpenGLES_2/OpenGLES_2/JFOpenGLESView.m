@@ -105,7 +105,7 @@ const GLfloat vertices[]={
 {
     //shader
     GLuint vertext  =[self compileWithShaderName:@"Vertex" shaderType:GL_VERTEX_SHADER];
-    GLuint fragment =[self compileWithShaderName:@"fragment" shaderType:GL_FRAGMENT_SHADER];
+    GLuint fragment =[self compileWithShaderName:@"Fragment" shaderType:GL_FRAGMENT_SHADER];
     
     _glProgram =glCreateProgram();
     glAttachShader(_glProgram, vertext);
