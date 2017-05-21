@@ -151,9 +151,9 @@
 		845FC6E81EC30C38001CEEFF /* OpenGLES */ = {
 			isa = PBXGroup;
 			children = (
+				845FC6E91EC30C44001CEEFF /* shader */,
 				845FC6E11EC30C36001CEEFF /* JFOpenGLESView.h */,
 				845FC6E21EC30C36001CEEFF /* JFOpenGLESView.m */,
-				845FC6E91EC30C44001CEEFF /* shader */,
 			);
 			name = OpenGLES;
 			sourceTree = "<group>";
