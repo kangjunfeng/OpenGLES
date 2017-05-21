@@ -32,6 +32,7 @@ typedef struct {
 {
     return [CAEAGLLayer class];
 }
+
 -(id)init
 {
     self = [super init];
