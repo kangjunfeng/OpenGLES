@@ -15,7 +15,7 @@
     if (self) {
         [self initLayer];
     }
-    return self;
+    return self; 
 }
 
 -(id)initWithFrame:(CGRect)frame
