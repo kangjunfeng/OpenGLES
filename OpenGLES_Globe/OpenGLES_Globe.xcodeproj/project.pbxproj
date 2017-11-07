@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		847D3E401ED2E46400E464CA /* Sphere1.c in Sources */ = {isa = PBXBuildFile; fileRef = 847D3E3E1ED2E46400E464CA /* Sphere1.c */; };
 		84C185FB1ECBDAB600946B05 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 84C185FA1ECBDAB600946B05 /* main.m */; };
 		84C185FE1ECBDAB600946B05 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 84C185FD1ECBDAB600946B05 /* AppDelegate.m */; };
 		84C186011ECBDAB600946B05 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 84C186001ECBDAB600946B05 /* ViewController.m */; };
@@ -19,7 +18,6 @@
 		84C1862F1ECBDAE400946B05 /* JFOpenGLESView.m in Sources */ = {isa = PBXBuildFile; fileRef = 84C1862E1ECBDAE400946B05 /* JFOpenGLESView.m */; };
 		84C186331ECBDAF100946B05 /* Fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 84C186311ECBDAF100946B05 /* Fragment.glsl */; };
 		84C186341ECBDAF100946B05 /* Vertex.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 84C186321ECBDAF100946B05 /* Vertex.glsl */; };
-		84C186361ECBE3CF00946B05 /* 3D.png in Resources */ = {isa = PBXBuildFile; fileRef = 84C186351ECBE3CF00946B05 /* 3D.png */; };
 		84C186411ECC3F8500946B05 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84C186401ECC3F8500946B05 /* OpenGLES.framework */; };
 		84C186431ECC3F8900946B05 /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84C186421ECC3F8900946B05 /* GLKit.framework */; };
 		84C186451ECC427600946B05 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84C186441ECC427600946B05 /* QuartzCore.framework */; };
@@ -47,8 +45,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		847D3E3E1ED2E46400E464CA /* Sphere1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Sphere1.c; sourceTree = "<group>"; };
-		847D3E3F1ED2E46400E464CA /* Sphere1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Sphere1.h; sourceTree = "<group>"; };
 		84C185F61ECBDAB600946B05 /* OpenGLES_Globe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenGLES_Globe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		84C185FA1ECBDAB600946B05 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		84C185FC1ECBDAB600946B05 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -69,7 +65,6 @@
 		84C1862E1ECBDAE400946B05 /* JFOpenGLESView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JFOpenGLESView.m; sourceTree = "<group>"; };
 		84C186311ECBDAF100946B05 /* Fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Fragment.glsl; sourceTree = "<group>"; };
 		84C186321ECBDAF100946B05 /* Vertex.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Vertex.glsl; sourceTree = "<group>"; };
-		84C186351ECBE3CF00946B05 /* 3D.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 3D.png; sourceTree = "<group>"; };
 		84C186401ECC3F8500946B05 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		84C186421ECC3F8900946B05 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		84C186441ECC427600946B05 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
@@ -110,6 +105,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		048E13071FA1C44800AD2745 /* SphereVertce */ = {
+			isa = PBXGroup;
+			children = (
+				84CEF9B11ECE7F4600C69756 /* gmMatrix.c */,
+				84CEF9B21ECE7F4600C69756 /* gmMatrix.h */,
+				84CEF9B31ECE7F4600C69756 /* gmVector.c */,
+				84CEF9B41ECE7F4600C69756 /* gmVector.h */,
+				84CEF9B51ECE7F4600C69756 /* Sphere.c */,
+				84CEF9B61ECE7F4600C69756 /* Sphere.h */,
+			);
+			name = SphereVertce;
+			sourceTree = "<group>";
+		};
 		84C185ED1ECBDAB600946B05 = {
 			isa = PBXGroup;
 			children = (
@@ -177,19 +185,11 @@
 		84C1862C1ECBDAD600946B05 /* OpenGLES */ = {
 			isa = PBXGroup;
 			children = (
-				84C186351ECBE3CF00946B05 /* 3D.png */,
-				84C186301ECBDAE600946B05 /* shader */,
+				84CEF9B01ECE7F4600C69756 /* balitieta.jpg */,
 				84C1862D1ECBDAE400946B05 /* JFOpenGLESView.h */,
 				84C1862E1ECBDAE400946B05 /* JFOpenGLESView.m */,
-				84CEF9B01ECE7F4600C69756 /* balitieta.jpg */,
-				84CEF9B11ECE7F4600C69756 /* gmMatrix.c */,
-				84CEF9B21ECE7F4600C69756 /* gmMatrix.h */,
-				84CEF9B31ECE7F4600C69756 /* gmVector.c */,
-				84CEF9B41ECE7F4600C69756 /* gmVector.h */,
-				84CEF9B51ECE7F4600C69756 /* Sphere.c */,
-				84CEF9B61ECE7F4600C69756 /* Sphere.h */,
-				847D3E3E1ED2E46400E464CA /* Sphere1.c */,
-				847D3E3F1ED2E46400E464CA /* Sphere1.h */,
+				84C186301ECBDAE600946B05 /* shader */,
+				048E13071FA1C44800AD2745 /* SphereVertce */,
 			);
 			name = OpenGLES;
 			sourceTree = "<group>";
@@ -324,7 +324,6 @@
 			files = (
 				84C186091ECBDAB600946B05 /* LaunchScreen.storyboard in Resources */,
 				84C186331ECBDAF100946B05 /* Fragment.glsl in Resources */,
-				84C186361ECBE3CF00946B05 /* 3D.png in Resources */,
 				84CEF9B71ECE7F4600C69756 /* balitieta.jpg in Resources */,
 				84C186061ECBDAB600946B05 /* Assets.xcassets in Resources */,
 				84C186041ECBDAB600946B05 /* Main.storyboard in Resources */,
@@ -355,7 +354,6 @@
 			files = (
 				84CEF9B91ECE7F4600C69756 /* gmVector.c in Sources */,
 				84CEF9BA1ECE7F4600C69756 /* Sphere.c in Sources */,
-				847D3E401ED2E46400E464CA /* Sphere1.c in Sources */,
 				84C186011ECBDAB600946B05 /* ViewController.m in Sources */,
 				84C185FE1ECBDAB600946B05 /* AppDelegate.m in Sources */,
 				84C185FB1ECBDAB600946B05 /* main.m in Sources */,

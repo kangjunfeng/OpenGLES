@@ -10,10 +10,6 @@
 #include "stdlib.h"
 #include "math.h"
 
-#define M_PI (3.14159265f)
-
-
-
 /**
  初始化球体纹理
  

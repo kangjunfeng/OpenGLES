@@ -10,24 +10,23 @@
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 
-#import <OpenGLES/ES3/gl.h>
-#import <OpenGLES/ES3/glext.h>
-
 #import <Foundation/Foundation.h>
 #import <GLKit/GLKit.h>
 #import "gmMatrix.h"
 #import "Sphere.h"
-#import "Sphere1.h"
 #include <stdlib.h>
+#import <CoreMotion/CoreMotion.h>
 
 #define  PI 3.141592653f
 #define Angle_To_Radian(angle) (angle * PI / 180.0)
 static float angle ;
 static float scaleLocation;
 
+
 @interface JFOpenGLESView(){
     EAGLContext *_eaglContext;
     CAEAGLLayer *_glLayer;
+    
     GLuint _colorRenderBuffer;
     GLuint _frameBuffer;
     GLuint _glProgram;
@@ -46,29 +45,31 @@ static float scaleLocation;
     GLint _viewHeight;
     
     //sphere
-    gmMatrix4 _mMatrix4;
-    gmMatrix4 model, view, proj,mvp;
-    GLfloat   *_vertexData; // 顶点数据
-    GLfloat   *_texCoords;  // 纹理坐标
-    GLushort  *_indices;    // 顶点索引
-    GLint    _numVetex;   // 顶点数量
-    GLuint  _texCoordsBuffer;// 纹理坐标内存标识
-    GLuint  _numIndices; // 顶点索引的数量
+    gmMatrix4   _mMatrix4;
+    gmMatrix4   modelMatrix, cameraMatrix, projMatrix,mvp;
+    GLfloat   *_vertexData;         // 顶点数据
+    GLfloat   *_texCoords;          // 纹理坐标
+    GLushort  *_indices;            // 顶点索引
+    GLint     _numVetex;            // 顶点数量
+    GLuint    _texCoordsBuffer;     // 纹理坐标内存标识
+    GLuint    _numIndices;          // 顶点索引的数量
     
-    GLuint _vertexBuffer;
-    GLuint _indexBuffer;
+    GLuint    _vertexBuffer;
+    GLuint    _indexBuffer;
 
     float scale;
     float rotateY;
     float rotateX;
     float eyeDist;
     
-    //sphere1
-    GLfloat  _vertices1; // 顶点数据
-    GLfloat  _texCoords1;  // 纹理坐标
-    GLint    _numVetex1;   // 顶点数量
-    
+    //sphere
+    GLfloat  _vertices1;    // 顶点数据
+    GLfloat  _texCoords1;   // 纹理坐标
+    GLint    _numVetex1;    // 顶点数量
+
 }
+
+@property(nonatomic,strong)CMMotionManager *motionManager;
 
 @end
 
@@ -101,6 +102,7 @@ static float scaleLocation;
         [self initImageTexture];
         [self prepare];
         [self initGesture];
+        [self cmmotion];
         
         // Set up Display Link
         CADisplayLink* displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(CADisplayLinkRender:)];
@@ -126,7 +128,7 @@ static float scaleLocation;
 {
     _glLayer = (CAEAGLLayer*) self.layer;
     
-    // CALayer 默认是透明的，必须将它设为不透明才能让其可见
+    //CALayer 默认是透明的，必须将它设为不透明才能让其可见
     _glLayer.opaque = YES;
     
     // 设置描绘属性，在这里设置不维持渲染内容以及颜色格式为 RGBA8
@@ -330,139 +332,37 @@ static float scaleLocation;
 }
 
 
-- (GLuint)setupTexture:(UIImage *)image {
-    CGImageRef cgImageRef = [image CGImage];
-    GLuint width = (GLuint)CGImageGetWidth(cgImageRef);
-    GLuint height = (GLuint)CGImageGetHeight(cgImageRef);
-    CGRect rect = CGRectMake(0, 0, width, height);
-    
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    void *imageData = malloc(width * height * 4);
-    CGContextRef context = CGBitmapContextCreate(imageData, width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-    CGContextTranslateCTM(context, 0, height);
-    CGContextScaleCTM(context, 1.0f, -1.0f);
-    CGColorSpaceRelease(colorSpace);
-    CGContextClearRect(context, rect);
-    CGContextDrawImage(context, rect, cgImageRef);
-    
-    glEnable(GL_TEXTURE_2D);
-    
-    /**
-     *  GL_TEXTURE_2D表示操作2D纹理
-     *  创建纹理对象，
-     *  绑定纹理对象，
-     */
-    
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    
-    /**
-     *  纹理过滤函数
-     *  图象从纹理图象空间映射到帧缓冲图象空间(映射需要重新构造纹理图像,这样就会造成应用到多边形上的图像失真),
-     *  这时就可用glTexParmeteri()函数来确定如何把纹理象素映射成像素.
-     *  如何把图像从纹理图像空间映射到帧缓冲图像空间（即如何把纹理像素映射成像素）
-     */
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // S方向上的贴图模式
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // T方向上的贴图模式
-    // 线性过滤：使用距离当前渲染像素中心最近的4个纹理像素加权平均值
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    /**
-     *  将图像数据传递给到GL_TEXTURE_2D中, 因其于textureID纹理对象已经绑定，所以即传递给了textureID纹理对象中。
-     *  glTexImage2d会将图像数据从CPU内存通过PCIE上传到GPU内存。
-     *  不使用PBO时它是一个阻塞CPU的函数，数据量大会卡。
-     */
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-    
-    // 结束后要做清理
-    glBindTexture(GL_TEXTURE_2D, 0); //解绑
-    CGContextRelease(context);
-    free(imageData);
-    
-    return textureID;
-}
-
-
 -(void)prepare
 {
-    scale =0.5f;
-    rotateY =0;
-    rotateX =0;
-    eyeDist =-3.5f;
-    angle   =0.0f;
-    scaleLocation =1.0f;
-    
-    InitgmMatrix4(&_mMatrix4);
-    InitgmMatrix4(&model);
-    
+    rotateY =   0;
+    rotateX =   0;
+
     //坐标、纹理、索引
     _numIndices = createSphere(200, 1.0, &(_vertexData), &(_texCoords), &_indices, &_numVetex);
 
-//    _numVetex1 = initSphere(60,50,&(_vertices1) ,&(_texCoords1));
-    
     //参数
-    _glPosition = glGetAttribLocation(_glProgram,"Position");
-    _texture    = glGetUniformLocation(_glProgram, "Texture");//frag
-    _textureCoords = glGetAttribLocation(_glProgram, "TextureCoords");
-    _uMatrix       = glGetUniformLocation(_glProgram, "Matrix");
-    _projMatrix    = glGetUniformLocation(_glProgram, "projMatrix");
-    _eyeMatrix     = glGetUniformLocation(_glProgram, "eyeMatrix");
-    _modeMatrix    = glGetUniformLocation(_glProgram, "modeMatrix");
-    
+    _glPosition     = glGetAttribLocation(_glProgram,"Position");
+    _textureCoords  = glGetAttribLocation(_glProgram, "TextureCoords");
+    _texture        = glGetUniformLocation(_glProgram, "Texture");//frag
+    _uMatrix        = glGetUniformLocation(_glProgram, "Matrix");
+ 
 }
 
 -(void)initGesture
 {
-    //捏合
-    UIPinchGestureRecognizer *pinchGesture =[[UIPinchGestureRecognizer alloc]initWithTarget:self action:@selector(pinchGesture:)];
-    [self addGestureRecognizer:pinchGesture];
-    
     //拖动
     UIPanGestureRecognizer *panGesture =[[UIPanGestureRecognizer alloc]initWithTarget:self action:@selector(panGesture:)];
     [self addGestureRecognizer:panGesture];
 }
 
 #pragma mark -- UIGesture
--(void)pinchGesture:(UIPinchGestureRecognizer*)gesture
-{
-    
-    if (gesture.state==UIGestureRecognizerStateChanged) {
-        if (scale *gesture.scale>2.0 || scale *gesture.scale<0.3) {
-            return;
-        }
-        scale *=gesture.scale;
-        
-//        if (scaleLocation*gesture.scale>scaleLocation) {
-//            eyeDist+=0.1f;
-//        }else{
-//            eyeDist-=0.1f;
-//        }
-    }else if(gesture.state ==UIGestureRecognizerStateEnded){
-        scaleLocation*=gesture.scale;
-    }
-}
-
 -(void)panGesture:(UIPanGestureRecognizer*)gesture
 {
     CGPoint translatedPoint = [gesture translationInView:self];
     
     if (gesture.state ==UIGestureRecognizerStateChanged) {
-        if (translatedPoint.x<0) {
-            rotateY +=2.0f;
-            angle   +=0.1f;
-        }else{
-            rotateY -=2.0f;
-            angle   -=0.1f;
-        }
-        
-//        if (translatedPoint.y<0) {
-//            rotateX +=1.0f;
-//        }else{
-//            rotateX -=1.0f;
-//        }
-        
+        rotateX+=translatedPoint.y;
+        rotateY+=translatedPoint.x;
     }
 }
 
@@ -480,154 +380,67 @@ static float scaleLocation;
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-//    glViewport(0,_viewHeight/2-_viewWidth/2, _viewWidth,_viewWidth);
     glViewport(0,0,_viewWidth,_viewHeight);
     
     //激活
-    glActiveTexture(GL_TEXTURE5); // 指定纹理单元GL_TEXTURE5
-    glBindTexture(GL_TEXTURE_2D, _textureID); // 绑定，即可从_textureID中取出图像数据。
+    glActiveTexture(GL_TEXTURE5); //指定纹理单元GL_TEXTURE5
+    glBindTexture(GL_TEXTURE_2D, _textureID); //绑定，即可从_textureID中取出图像数据。
     glUniform1i(_texture, 5); // 与纹理单元的序号对应
     
     //render
-    [self renderSphereVertice3];
+    [self renderSphereVertice];
     
     // 使用完之后解绑GL_TEXTURE_2D
     glBindTexture(GL_TEXTURE_2D, 0);
     [_eaglContext presentRenderbuffer:GL_RENDERBUFFER];
-    
-}
-
--(void)renderSphereVertice1
-{
-    int CAP = 5;//绘制球体时，每次增加的角度
-    int numVert = (180/CAP) * (360/CAP) * 6 * 3;
-    int numText = (180/CAP) * (360/CAP) * 6 * 2;
-    GLfloat  verticals[numVert];
-    
-    GLfloat  UV_TEX_VERTEX[numText];
-
-    float x = 0;
-    float y = 0;
-    float z = 0;
-    
-    float r = 0.5;//球体半径
-    int index = 0;
-    int index1 = 0;
-    double d = CAP * PI / 180;//每次递增的弧度
-    for (int i = 0; i < 180; i += CAP) {
-        double d1 = i * PI / 180;
-        for (int j = 0; j < 360; j += CAP) {
-            //获得球体上切分的超小片矩形的顶点坐标（两个三角形组成，所以有六点顶点）
-            double d2 = j * PI / 180;
-            verticals[index++] = (float) (x + r * sin(d1 + d) * cos(d2 + d));
-            verticals[index++] = (float) (y + r * cos(d1 + d));
-            verticals[index++] = (float) (z + r * sin(d1 + d) * sin(d2 + d));
-            //获得球体上切分的超小片三角形的纹理坐标
-            UV_TEX_VERTEX[index1++] = (j + CAP) * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = (i + CAP) * 1.0f / 180;
-            
-            verticals[index++] = (float) (x + r * sin(d1) * cos(d2));
-            verticals[index++] = (float) (y + r * cos(d1));
-            verticals[index++] = (float) (z + r * sin(d1) * sin(d2));
-            
-            UV_TEX_VERTEX[index1++] = j * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = i * 1.0f / 180;
-            
-            verticals[index++] = (float) (x + r * sin(d1) * cos(d2 + d));
-            verticals[index++] = (float) (y + r * cos(d1));
-            verticals[index++] = (float) (z + r * sin(d1) * sin(d2 + d));
-            
-            UV_TEX_VERTEX[index1++] = (j + CAP) * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = i * 1.0f / 180;
-            
-            verticals[index++] = (float) (x + r * sin(d1 + d) * cos(d2 + d));
-            verticals[index++] = (float) (y + r * cos(d1 + d));
-            verticals[index++] = (float) (z + r * sin(d1 + d) * sin(d2 + d));
-            
-            UV_TEX_VERTEX[index1++] = (j + CAP) * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = (i + CAP) * 1.0f / 180;
-            
-            verticals[index++] = (float) (x + r * sin(d1 + d) * cos(d2));
-            verticals[index++] = (float) (y + r * cos(d1 + d));
-            verticals[index++] = (float) (z + r * sin(d1 + d) * sin(d2));
-            
-            UV_TEX_VERTEX[index1++] = j * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = (i + CAP) * 1.0f / 180;
-            
-            verticals[index++] = (float) (x + r * sin(d1) * cos(d2));
-            verticals[index++] = (float) (y + r * cos(d1));
-            verticals[index++] = (float) (z + r * sin(d1) * sin(d2));
-            
-            UV_TEX_VERTEX[index1++] = j * 1.0f / 360;
-            UV_TEX_VERTEX[index1++] = i * 1.0f / 180;
-        }
-    }
-    
-    gmVector3 eye = {0.0f, 0.0f, eyeDist};
-    gmVector3 at  = {0.0f, 0.0f, 0.0f};
-    gmVector3 up  = {0.0f, 1.0f, 0.0f};
-    
-    gmMatrixLookAtLH(&view, &eye, &at, &up);
-    
-    gmMatrixPerspectiveFovLH(&proj, 1.0f, (float)_viewWidth / (float)_viewHeight, 1.0f, 1000.0f);
-    
-    gmMatrixMultiply(&mvp, &model, &view);
-    gmMatrixMultiply(&mvp, &mvp, &proj);
-    
-    gmMatrixRotateY(&model, angle);
-    glUniformMatrix4fv(_uMatrix, 1, 0, (float*)&mvp);
-
-    
-    glVertexAttribPointer(_textureCoords, 2, GL_FLOAT, GL_FALSE, 0, UV_TEX_VERTEX);
-    glEnableVertexAttribArray(_textureCoords);
-    
-    glVertexAttribPointer(_glPosition, 3, GL_FLOAT, GL_FALSE, 0, verticals);
-    glEnableVertexAttribArray(_glPosition);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, numVert/3);
-    
 }
 
 
--(void)renderSphereVertice3
+-(void)renderSphereVertice
 {
     //透视投影
     float aspect = fabsf((float)_viewWidth /(float)_viewHeight);
-    GLKMatrix4 perspectiveMatrix =GLKMatrix4MakePerspective(GLKMathDegreesToRadians(90.0f),aspect, 1.0f,100.0f);
-    perspectiveMatrix  = GLKMatrix4Scale(perspectiveMatrix, scale, scale, 1.0f);
-    perspectiveMatrix  = GLKMatrix4RotateY(perspectiveMatrix, GLKMathDegreesToRadians(rotateY));
-    perspectiveMatrix  = GLKMatrix4RotateX(perspectiveMatrix, GLKMathDegreesToRadians(rotateX));
-    
-//    perspectiveMatrix  = GLKMatrix4Translate(perspectiveMatrix, 0, 0, -0.5f);
-//    GLKMatrix4 frustum    = GLKMatrix4MakeFrustum(-1,1,-1,1,1.0f,1000.0f);
-//    GLKMatrix4 projMatrix = GLKMatrix4Multiply(perspectiveMatrix, frustum);
-    
-    //相机视角
-    GLKMatrix4 eyeMatrix= GLKMatrix4MakeLookAt(0.0f, 0.0f, -1.0f,
-                                               0.0f, 0.0f, 0.0f,
-                                               0.0f, 1.0f, 0.0f);
-//    GLKMatrix4 modeMatrix = GLKMatrix4MakeTranslation(0.0f, -1.0f, -6.5f);;
+/*----------------------------------- oc  --------------------------------*/
+    GLKMatrix4 perspectiveMatrix =GLKMatrix4MakePerspective(GLKMathDegreesToRadians(90.0f),aspect, 0.1f,100.0f);
+    perspectiveMatrix  = GLKMatrix4Scale(perspectiveMatrix, 1.0, 1.0, 1.0);
+    perspectiveMatrix  = GLKMatrix4RotateX(perspectiveMatrix, GLKMathDegreesToRadians(0.05*rotateX));
    
+    if (_motionManager.deviceMotion !=nil) {
+        //陀螺仪
+        double w = _motionManager.deviceMotion.attitude.quaternion.w;
+        double x = _motionManager.deviceMotion.attitude.quaternion.x;
+        double y = _motionManager.deviceMotion.attitude.quaternion.y;
+        double z = _motionManager.deviceMotion.attitude.quaternion.z;
+        
+        GLKQuaternion quaternion         = GLKQuaternionMake(x,-y, z, w);
+        GLKMatrix4    quaternionMatrix4  = GLKMatrix4MakeWithQuaternion(quaternion);
+        perspectiveMatrix = GLKMatrix4Multiply(perspectiveMatrix, quaternionMatrix4);
+        
+        //设置手机观看视角为从上往下
+        perspectiveMatrix = GLKMatrix4RotateX(perspectiveMatrix,-M_PI_2);
+    }
+    
+    //显示图像在相机视角有翻转，所以为-
+    perspectiveMatrix  = GLKMatrix4RotateY(perspectiveMatrix, GLKMathDegreesToRadians(-0.05*rotateY));
+
+    //相机视角
+    GLKMatrix4 cameraMatrix = GLKMatrix4MakeLookAt(0.0f, 0.0f, 0.0f,
+                                                   0.0f, 0.0f, 1.0f,
+                                                   0.0f, -1.0f, 0.0f);
+    //模型
+    GLKMatrix4 modeMatrix = GLKMatrix4Identity;
+   
+    //MVP
     GLKMatrix4 MVP = GLKMatrix4Identity;
-//    MVP = GLKMatrix4Multiply(MVP, modeMatrix);
-    MVP = GLKMatrix4Multiply(MVP, eyeMatrix);
+    MVP = GLKMatrix4Multiply(MVP, modeMatrix);
+    MVP = GLKMatrix4Multiply(MVP, cameraMatrix);
     MVP = GLKMatrix4Multiply(MVP, perspectiveMatrix);
+   
     //矩阵
     glUniformMatrix4fv(_uMatrix, 1, 0, (float*)&MVP);
 
-/*----------------------------------- c --------------------------------*/
-//    gmVector3 eye = {0.0f, 0.0f, eyeDist};
-//    gmVector3 at  = {0.0f, 0.0f, 0.0f};
-//    gmVector3 up  = {0.0f, 1.0f, 0.0f};
-//
-//    gmMatrixLookAtLH(&view, &eye, &at, &up);
-//
-//    gmMatrixPerspectiveFovLH(&proj, 1.0f, (float)_viewWidth / (float)_viewHeight, 1.0f, 1000.0f);
-//
-//    gmMatrixMultiply(&mvp, &model, &view);
-//    gmMatrixMultiply(&mvp, &mvp, &proj);
-//
-//    gmMatrixRotateY(&model, angle);
-//    glUniformMatrix4fv(_uMatrix, 1, 0, (float*)&mvp);
+/*----------------------------------- oc end --------------------------------*/
+
     
     // 加载顶点坐标数据
     glGenBuffers(1, &_vertexBuffer); // 申请内存
@@ -656,6 +469,22 @@ static float scaleLocation;
     glDeleteBuffers(1, &_vertexBuffer);
     glDeleteBuffers(1, &_indexBuffer);
     glDeleteBuffers(1, &_texCoordsBuffer);
+}
+
+
+-(void)cmmotion
+{
+    //创建运动管理者对象
+    CMMotionManager *motionManager = [[CMMotionManager alloc]init];
+    if (!motionManager.gyroAvailable) { //判断陀螺仪是否可用
+        return;
+    }
+    
+    motionManager.gyroUpdateInterval = 1/60; // 1秒钟采样10次
+    [motionManager startDeviceMotionUpdates];
+   
+    self.motionManager =motionManager;
+    
 }
 
 @end
